@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "8emvQ/KEZQs=",
+  "success": true,
+  "projectFilePath": "D:\\TeamX\\TallyImporter\\Tally.Integration.Sample\\Tally.Integration.Sample.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\thanu\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

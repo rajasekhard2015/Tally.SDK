@@ -1,0 +1,2 @@
+D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Debug\Tally.Integration.SDK.csproj.AssemblyReference.cache
+D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Debug\Tally.Integration.SDK.csproj.CoreCompileInputs.cache

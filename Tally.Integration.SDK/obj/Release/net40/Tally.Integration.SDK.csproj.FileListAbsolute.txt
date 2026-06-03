@@ -1,0 +1,9 @@
+D:\TeamX\TallyImporter\Tally.Integration.SDK\bin\Release\net40\Tally.Integration.SDK.dll
+D:\TeamX\TallyImporter\Tally.Integration.SDK\bin\Release\net40\Tally.Integration.SDK.pdb
+D:\TeamX\TallyImporter\Tally.Integration.SDK\bin\Release\net40\Newtonsoft.Json.dll
+D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Release\net40\Tally.Integration.SDK.csproj.AssemblyReference.cache
+D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Release\net40\Tally.Integration.SDK.GeneratedMSBuildEditorConfig.editorconfig
+D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Release\net40\Tally.Integration.SDK.csproj.CoreCompileInputs.cache
+D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Release\net40\Tally.In.DFBD130F.Up2Date
+D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Release\net40\Tally.Integration.SDK.dll
+D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Release\net40\Tally.Integration.SDK.pdb

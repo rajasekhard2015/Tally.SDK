@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net40</TargetFramework>
+    <RootNamespace>Tally.Integration.Sample</RootNamespace>
+    <AssemblyName>Tally.Integration.Sample</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tally.Integration.SDK\Tally.Integration.SDK.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Mappings\Sales.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

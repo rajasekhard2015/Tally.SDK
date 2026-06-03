@@ -1,0 +1,9 @@
+{
+  "VoucherType": "Sales",
+  "Mappings": {
+    "InvoiceNo": "VOUCHERNUMBER",
+    "Customer": "PARTYLEDGERNAME",
+    "InvoiceDate": "DATE",
+    "Amount": "AMOUNT"
+  }
+}

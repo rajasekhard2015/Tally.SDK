@@ -1,0 +1,65 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\TeamX\\TallyImporter\\Tally.Integration.SDK\\Tally.Integration.SDK.csproj": {}
+  },
+  "projects": {
+    "D:\\TeamX\\TallyImporter\\Tally.Integration.SDK\\Tally.Integration.SDK.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\TeamX\\TallyImporter\\Tally.Integration.SDK\\Tally.Integration.SDK.csproj",
+        "projectName": "Tally.Integration.SDK",
+        "projectPath": "D:\\TeamX\\TallyImporter\\Tally.Integration.SDK\\Tally.Integration.SDK.csproj",
+        "packagesPath": "C:\\Users\\thanu\\.nuget\\packages\\",
+        "outputPath": "D:\\TeamX\\TallyImporter\\Tally.Integration.SDK\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\thanu\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net40"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.abp.io/ab1eb97d-6c45-46fb-b387-e340f13c3ebf/v3/index.json": {}
+        },
+        "frameworks": {
+          "net40": {
+            "targetAlias": "net40",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net40": {
+          "targetAlias": "net40",
+          "dependencies": {
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

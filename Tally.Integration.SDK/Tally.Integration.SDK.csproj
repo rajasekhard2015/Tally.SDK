@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net40</TargetFramework>
+    <RootNamespace>Tally.Integration.SDK</RootNamespace>
+    <AssemblyName>Tally.Integration.SDK</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <PackageId>Tally.Integration.SDK</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Rajasekhar Donkala</Authors>
+    <Company>Team-X IT and Consulting Services</Company>
+    <Description>Lightweight SDK to import mapped JSON/XML/object data into Tally Prime and Tally ERP via HTTP XML API.</Description>
+    <PackageTags>tally; tdl; xml; accounting; integration; sdk; tally-prime; tally-erp</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/rajasekhard2015/Tally.SDK.git</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/rajasekhard2015/Tally.SDK.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

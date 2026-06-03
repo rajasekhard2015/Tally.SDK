@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Tally.Integration.SDK</id>
+    <version>1.0.0</version>
+    <authors>Rajasekhar Donkala</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/rajasekhard2015/Tally.SDK.git</projectUrl>
+    <description>Lightweight SDK to import mapped JSON/XML/object data into Tally Prime and Tally ERP via HTTP XML API.</description>
+    <tags>tally tdl xml accounting integration sdk tally-prime tally-erp</tags>
+    <repository type="git" url="https://github.com/rajasekhard2015/Tally.SDK.git" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.0">
+        <dependency id="Newtonsoft.Json" version="13.0.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="D:\TeamX\TallyImporter\Tally.Integration.SDK\bin\Release\net40\Tally.Integration.SDK.dll" target="lib\net40\Tally.Integration.SDK.dll" />
+    <file src="D:\TeamX\TallyImporter\Tally.Integration.SDK\README.md" target="\README.md" />
+  </files>
+</package>
