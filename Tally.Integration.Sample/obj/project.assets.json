@@ -16,16 +16,15 @@
         }
       },
       "Tally.Integration.SDK/1.0.0": {
-        "type": "project",
-        "framework": ".NETFramework,Version=v4.0",
+        "type": "package",
         "dependencies": {
           "Newtonsoft.Json": "13.0.3"
         },
         "compile": {
-          "bin/placeholder/Tally.Integration.SDK.dll": {}
+          "lib/net40/Tally.Integration.SDK.dll": {}
         },
         "runtime": {
-          "bin/placeholder/Tally.Integration.SDK.dll": {}
+          "lib/net40/Tally.Integration.SDK.dll": {}
         }
       }
     },
@@ -44,16 +43,15 @@
         }
       },
       "Tally.Integration.SDK/1.0.0": {
-        "type": "project",
-        "framework": ".NETFramework,Version=v4.0",
+        "type": "package",
         "dependencies": {
           "Newtonsoft.Json": "13.0.3"
         },
         "compile": {
-          "bin/placeholder/Tally.Integration.SDK.dll": {}
+          "lib/net40/Tally.Integration.SDK.dll": {}
         },
         "runtime": {
-          "bin/placeholder/Tally.Integration.SDK.dll": {}
+          "lib/net40/Tally.Integration.SDK.dll": {}
         }
       }
     }
@@ -90,9 +88,16 @@
       ]
     },
     "Tally.Integration.SDK/1.0.0": {
-      "type": "project",
-      "path": "../Tally.Integration.SDK/Tally.Integration.SDK.csproj",
-      "msbuildProject": "../Tally.Integration.SDK/Tally.Integration.SDK.csproj"
+      "sha512": "/JnSxHLSNkEfvdDWVESfRY886LRQNM+NBoYF2MMX9/aoMKRuLE5tjQuRqYTLoR2tsHjA0m1usRslx0Pt+urPHA==",
+      "type": "package",
+      "path": "tally.integration.sdk/1.0.0",
+      "files": [
+        ".nupkg.metadata",
+        "README.md",
+        "lib/net40/Tally.Integration.SDK.dll",
+        "tally.integration.sdk.1.0.0.nupkg.sha512",
+        "tally.integration.sdk.nuspec"
+      ]
     }
   },
   "projectFileDependencyGroups": {
@@ -133,11 +138,7 @@
       "frameworks": {
         "net40": {
           "targetAlias": "net40",
-          "projectReferences": {
-            "D:\\TeamX\\TallyImporter\\Tally.Integration.SDK\\Tally.Integration.SDK.csproj": {
-              "projectPath": "D:\\TeamX\\TallyImporter\\Tally.Integration.SDK\\Tally.Integration.SDK.csproj"
-            }
-          }
+          "projectReferences": {}
         }
       },
       "warningProperties": {
@@ -155,6 +156,12 @@
     "frameworks": {
       "net40": {
         "targetAlias": "net40",
+        "dependencies": {
+          "Tally.Integration.SDK": {
+            "target": "Package",
+            "version": "[1.0.0, )"
+          }
+        },
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101\\RuntimeIdentifierGraph.json"
       }
     },

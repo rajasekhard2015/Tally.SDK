@@ -4,10 +4,10 @@ D:\TeamX\TallyImporter\Tally.Integration.Sample\bin\Debug\net40\Tally.Integratio
 D:\TeamX\TallyImporter\Tally.Integration.Sample\bin\Debug\net40\Tally.Integration.Sample.pdb
 D:\TeamX\TallyImporter\Tally.Integration.Sample\bin\Debug\net40\Newtonsoft.Json.dll
 D:\TeamX\TallyImporter\Tally.Integration.Sample\bin\Debug\net40\Tally.Integration.SDK.dll
-D:\TeamX\TallyImporter\Tally.Integration.Sample\bin\Debug\net40\Tally.Integration.SDK.pdb
 D:\TeamX\TallyImporter\Tally.Integration.Sample\obj\Debug\net40\Tally.Integration.Sample.csproj.AssemblyReference.cache
 D:\TeamX\TallyImporter\Tally.Integration.Sample\obj\Debug\net40\Tally.Integration.Sample.GeneratedMSBuildEditorConfig.editorconfig
 D:\TeamX\TallyImporter\Tally.Integration.Sample\obj\Debug\net40\Tally.Integration.Sample.csproj.CoreCompileInputs.cache
 D:\TeamX\TallyImporter\Tally.Integration.Sample\obj\Debug\net40\Tally.In.66924303.Up2Date
 D:\TeamX\TallyImporter\Tally.Integration.Sample\obj\Debug\net40\Tally.Integration.Sample.exe
 D:\TeamX\TallyImporter\Tally.Integration.Sample\obj\Debug\net40\Tally.Integration.Sample.pdb
+D:\TeamX\TallyImporter\Tally.Integration.Sample\obj\Debug\net40\Tally.Integration.Sample.sourcelink.json
