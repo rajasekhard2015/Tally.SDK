@@ -1,0 +1,43 @@
+# Build artifacts
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+
+# VS and Rider user files
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Logs and temp files
+*.log
+*.tmp
+*.cache
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+*.nuspec
+
+# Keep project/package metadata file if manually added
+!**/packages.config
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+*.coverage
+*.coveragexml
+
+# Local package output folder used in this repo
+Tally.Integration.SDK/nupkg/
