@@ -49,7 +49,47 @@ Public methods:
 - `ImportDataTable(DataTable table, string voucherType, string mappingFile)`
 - `TestConnection()`
 
-## 5. Quick Start
+## 5. Supported Data Input Types (Client Use)
+
+Use the following methods based on client payload type:
+
+1. JSON string
+
+```csharp
+var result = sdk.ImportJson(jsonData, "Sales", @"Mappings\Sales.json");
+```
+
+2. XML string
+
+```csharp
+var result = sdk.ImportXml(xmlData, "Sales", @"Mappings\Sales.json");
+```
+
+3. POCO object
+
+```csharp
+var result = sdk.ImportObject(invoiceObject, "Sales", @"Mappings\Sales.json");
+```
+
+4. Dictionary<string, object>
+
+```csharp
+var result = sdk.ImportDictionary(dictionaryData, "Sales", @"Mappings\Sales.json");
+```
+
+5. DataTable
+
+```csharp
+var result = sdk.ImportDataTable(invoiceTable, "Sales", @"Mappings\Sales.json");
+```
+
+6. Connectivity check
+
+```csharp
+var isConnected = sdk.TestConnection();
+```
+
+## 6. Quick Start
 
 ```csharp
 using System;
@@ -84,7 +124,7 @@ class Program
 }
 ```
 
-## 6. Mapping File Format
+## 7. Mapping File Format
 
 Mapping is fully dynamic and JSON-driven.
 
@@ -107,7 +147,7 @@ Notes:
 - No hardcoded source-to-target field mappings are required in code.
 - `voucherType` parameter overrides `VoucherType` in mapping file when provided.
 
-## 7. Voucher Type Support
+## 8. Voucher Type Support
 
 ### 7.1 Built-in voucher generators
 
@@ -130,7 +170,7 @@ Examples:
 - Delivery Note
 - Custom voucher type names present in Tally
 
-## 8. Important Runtime Settings
+## 9. Important Runtime Settings
 
 `TallySdk` configurable properties:
 
@@ -146,7 +186,7 @@ Examples:
 - `FallbackVoucherDate`
   - Date used for retry when date errors occur
 
-## 9. Import Result Fields
+## 10. Import Result Fields
 
 `ImportResult` includes:
 
@@ -161,7 +201,7 @@ Examples:
 - `RequestXml`
 - `PushToTallyAttempted`
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 ### 10.1 No data visible in Tally
 
@@ -186,14 +226,14 @@ Examples:
 - Keep `AutoCreateMissingLedgers = true`
 - Or create required ledgers in Tally manually
 
-## 11. Security and Production Notes
+## 12. Security and Production Notes
 
 - Run SDK in controlled network context; Tally endpoint is typically local.
 - Validate/clean incoming payloads before import.
 - Log `RequestXml` and `ResponseXml` for audit/debug.
 - Use sensible timeout values for production workloads.
 
-## 12. Verification Checklist
+## 13. Verification Checklist
 
 Before go-live:
 
@@ -204,7 +244,7 @@ Before go-live:
 - Date strategy aligned with company period
 - Integration logs enabled for failures
 
-## 13. Support Handover Notes
+## 14. Support Handover Notes
 
 Share with client:
 
