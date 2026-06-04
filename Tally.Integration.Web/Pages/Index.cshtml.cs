@@ -270,12 +270,46 @@ public class IndexModel : PageModel
                 { "LedgerEntries/Ledger[*]/Name", "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME" },
                 { "LedgerEntries/Ledger[*]/Amount", "ALLLEDGERENTRIES.LIST[*]/AMOUNT" },
                 { "TotalAmount", "AMOUNT" },
-                { "Narration", "NARRATION" }
+                { "Narration", "NARRATION" },
+
+                // OM SOFTWARE TECHNOLOGY XML shape support
+                { "Header/T_TranNo", "VOUCHERNUMBER" },
+                { "Header/T_TranDate", "DATE" },
+                { "Header/PartyName", "PARTYLEDGERNAME" },
+                { "Header/GSTNo", "PARTYGSTIN" },
+                { "Header/HeaderRemarks", "NARRATION" },
+                { "Header/Details/Detail[*]/ItemName", "ALLINVENTORYENTRIES.LIST[*]/STOCKITEMNAME" },
+                { "Header/Details/Detail[*]/Qty", "ALLINVENTORYENTRIES.LIST[*]/BILLEDQTY" },
+                { "Header/Details/Detail[*]/Rate", "ALLINVENTORYENTRIES.LIST[*]/RATE" },
+                { "Header/Details/Detail[*]/ItemTotal", "ALLINVENTORYENTRIES.LIST[*]/AMOUNT" },
+                { "Header/Payments/Payment[*]/PayMode", "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME" },
+                { "Header/Payments/Payment[*]/ItemTotal", "ALLLEDGERENTRIES.LIST[*]/AMOUNT" }
             },
             CompanyTemplates = new Dictionary<string, object>
             {
                 {
                     "TEAM-X",
+                    new
+                    {
+                        StrictMode = true,
+                        Defaults = new Dictionary<string, string>
+                        {
+                            { "VOUCHERTYPENAME", voucherName },
+                            { "PERSISTEDVIEW", "Invoice Voucher View" },
+                            { "ISINVOICE", "Yes" },
+                            { isPurchase ? "PURCHASELEDGERNAME" : "SALESLEDGERNAME", counterLedger }
+                        },
+                        RequiredTargets = new[]
+                        {
+                            "DATE",
+                            "PARTYLEDGERNAME",
+                            "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME",
+                            "ALLLEDGERENTRIES.LIST[*]/AMOUNT"
+                        }
+                    }
+                },
+                {
+                    "OM SOFTWARE TECHNOLOGY",
                     new
                     {
                         StrictMode = true,

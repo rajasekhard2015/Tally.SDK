@@ -33,6 +33,45 @@
         font-family: Consolas, "Courier New", monospace;
         font-size: 0.92rem;
     }
+
+    .tpl-card {
+        border: 1px solid #d0d9ee;
+        border-radius: 10px;
+        background: #f5f8ff;
+    }
+
+    .tpl-card .tpl-header {
+        cursor: pointer;
+        user-select: none;
+        font-weight: 600;
+        color: #1e3a6e;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 10px;
+    }
+
+    .tpl-card .tpl-header:hover { background: #e8eefa; }
+
+    .tpl-json-wrap { border: 1px solid #2d3650; border-radius: 8px; overflow: hidden; }
+    .tpl-json-tabbar { padding: 6px 10px 0; background: #252b3d; display: flex; gap: 4px; }
+    .tpl-tab { background: transparent; color: #8ba0c8; border: none; border-bottom: 2px solid transparent;
+               border-radius: 0; padding: 4px 14px; font-size: 0.82rem; cursor: pointer; }
+    .tpl-tab.active { color: #fff; border-bottom-color: #5b8fff; }
+    .tpl-json-view { margin: 0; padding: 14px; background: #1e2332; color: #e2e8f0;
+                     font-family: Consolas, "Courier New", monospace; font-size: 0.84rem;
+                     min-height: 280px; max-height: 420px; overflow: auto; white-space: pre;
+                     border: none; line-height: 1.6; }
+    .tpl-json-editor { font-family: Consolas, "Courier New", monospace; font-size: 0.84rem;
+                       background: #1e2332; color: #e2e8f0; border: none; resize: vertical;
+                       border-radius: 0; height: 340px; line-height: 1.6; }
+    .tpl-json-editor:focus { outline: none; box-shadow: none; }
+    .json-key  { color: #79b8ff; }
+    .json-str  { color: #9ecbff; }
+    .json-num  { color: #f8c555; }
+    .json-bool { color: #ff7b72; }
+    .json-null { color: #ff7b72; font-style: italic; }
 </style>
 
 <div class="container py-4 page-wrap">
@@ -107,6 +146,39 @@
                     <div class="mt-2 d-flex gap-2">
                         <button id="generateMappingBtn" class="btn btn-outline-primary btn-sm" type="button">Generate Mapping from Payload</button>
                         <button id="resetMappingTemplateBtn" class="btn btn-outline-secondary btn-sm" type="button">Reset Mapping Template</button>
+                    </div>
+                </div>
+
+                <!-- Company Template Editor -->
+                <div class="col-12">
+                    <div class="tpl-card">
+                        <div class="tpl-header" id="tplToggle">
+                            <span>&#9881; Company Template Editor</span>
+                            <span id="tplChevron">&#9660;</span>
+                        </div>
+                        <div id="tplBody" style="display:none; padding:14px;">
+                            <!-- Toolbar -->
+                            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                                <label style="font-size:0.83rem; font-weight:600; color:#27384f; white-space:nowrap;">Company:</label>
+                                <select id="tplCompanySelect" class="form-select form-select-sm" style="max-width:190px;"></select>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="tplAddCompanyBtn">+ New</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="tplDeleteCompanyBtn">Delete</button>
+                                <div class="ms-auto d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="tplFormatBtn">Format</button>
+                                    <button type="button" class="btn btn-success btn-sm" id="tplApplyBtn">Apply to Mapping JSON</button>
+                                </div>
+                            </div>
+                            <!-- JSON viewer/editor -->
+                            <div class="tpl-json-wrap">
+                                <div class="tpl-json-tabbar">
+                                    <button type="button" class="tpl-tab active" id="tplViewTab">View</button>
+                                    <button type="button" class="tpl-tab" id="tplEditTab">Edit</button>
+                                </div>
+                                <pre id="tplJsonView" class="tpl-json-view"></pre>
+                                <textarea id="tplJsonEditor" class="form-control tpl-json-editor" style="display:none;"></textarea>
+                            </div>
+                            <div id="tplEditorError" class="text-danger mt-2" style="font-size:0.83rem;"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -482,6 +554,188 @@
         if (!mappingBox.value || mappingBox.value.trim().length === 0) {
             mappingBox.value = getMappingTemplate();
         }
+
+        // ── Company Template JSON Viewer ───────────────────────────────────
+        const tplToggle        = document.getElementById("tplToggle");
+        const tplChevron       = document.getElementById("tplChevron");
+        const tplBody          = document.getElementById("tplBody");
+        const tplCompanySelect = document.getElementById("tplCompanySelect");
+        const tplEditorError   = document.getElementById("tplEditorError");
+        const tplApplyBtn      = document.getElementById("tplApplyBtn");
+        const tplAddCompanyBtn = document.getElementById("tplAddCompanyBtn");
+        const tplDeleteBtn     = document.getElementById("tplDeleteCompanyBtn");
+        const tplFormatBtn     = document.getElementById("tplFormatBtn");
+        const tplViewTab       = document.getElementById("tplViewTab");
+        const tplEditTab       = document.getElementById("tplEditTab");
+        const tplJsonView      = document.getElementById("tplJsonView");
+        const tplJsonEditor    = document.getElementById("tplJsonEditor");
+
+        let tplOpen    = false;
+        let tplInEdit  = false;
+
+        // ── toggle panel
+        tplToggle.addEventListener("click", function () {
+            tplOpen = !tplOpen;
+            tplBody.style.display = tplOpen ? "block" : "none";
+            tplChevron.innerHTML  = tplOpen ? "&#9650;" : "&#9660;";
+            if (tplOpen) { tplLoadAll(); }
+        });
+
+        function parseMappingJson() {
+            try { return JSON.parse(mappingBox.value || "{}"); } catch { return null; }
+        }
+
+        // ── syntax highlight a JSON string → HTML
+        function syntaxHL(json) {
+            const esc = json.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+            return esc.replace(
+                /("(?:\\[\s\S]|[^\\"])*"(?:\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                function(m) {
+                    if (/^"/.test(m)) return /:$/.test(m)
+                        ? `<span class="json-key">${m}</span>`
+                        : `<span class="json-str">${m}</span>`;
+                    if (/true|false/.test(m)) return `<span class="json-bool">${m}</span>`;
+                    if (/null/.test(m))       return `<span class="json-null">${m}</span>`;
+                    return `<span class="json-num">${m}</span>`;
+                }
+            );
+        }
+
+        // ── populate company dropdown from mapping
+        function tplLoadAll() {
+            tplEditorError.textContent = "";
+            const mapping = parseMappingJson();
+            if (!mapping) { tplEditorError.textContent = "Mapping JSON is invalid — fix it first."; return; }
+
+            const templates = mapping.CompanyTemplates || {};
+            const prevKey   = tplCompanySelect.value;
+            tplCompanySelect.innerHTML = "";
+
+            const keys = Object.keys(templates);
+            if (keys.length === 0) {
+                const o = document.createElement("option"); o.value=""; o.textContent="(no templates)";
+                tplCompanySelect.appendChild(o);
+            } else {
+                keys.forEach(k => {
+                    const o = document.createElement("option"); o.value=k; o.textContent=k;
+                    if (k === prevKey) o.selected = true;
+                    tplCompanySelect.appendChild(o);
+                });
+            }
+            tplShowSelected(templates);
+        }
+
+        // ── show selected company profile in viewer/editor
+        function tplShowSelected(templates) {
+            const key     = tplCompanySelect.value;
+            const profile = (key && templates && templates[key])
+                ? templates[key]
+                : { StrictMode: true, Defaults: {}, RequiredTargets: [] };
+
+            const pretty = JSON.stringify(profile, null, 2);
+            tplJsonView.innerHTML   = syntaxHL(pretty);
+            tplJsonEditor.value     = pretty;
+        }
+
+        tplCompanySelect.addEventListener("change", function () {
+            const mapping = parseMappingJson();
+            if (!mapping) return;
+            tplShowSelected(mapping.CompanyTemplates || {});
+        });
+
+        // ── View / Edit tabs
+        tplViewTab.addEventListener("click", function () {
+            tplInEdit = false;
+            tplViewTab.classList.add("active");  tplEditTab.classList.remove("active");
+            tplJsonView.style.display   = "block"; tplJsonEditor.style.display = "none";
+            // refresh view from editor content
+            try {
+                const pretty = JSON.stringify(JSON.parse(tplJsonEditor.value), null, 2);
+                tplJsonView.innerHTML = syntaxHL(pretty);
+                tplJsonEditor.value   = pretty;
+                tplEditorError.textContent = "";
+            } catch { tplEditorError.textContent = "JSON in editor is invalid."; }
+        });
+
+        tplEditTab.addEventListener("click", function () {
+            tplInEdit = true;
+            tplEditTab.classList.add("active"); tplViewTab.classList.remove("active");
+            tplJsonEditor.style.display = "block"; tplJsonView.style.display = "none";
+            tplEditorError.textContent = "";
+        });
+
+        // ── Format button (pretty-print editor content)
+        tplFormatBtn.addEventListener("click", function () {
+            try {
+                const pretty = JSON.stringify(JSON.parse(tplJsonEditor.value), null, 2);
+                tplJsonEditor.value = pretty;
+                tplJsonView.innerHTML = syntaxHL(pretty);
+                tplEditorError.textContent = "";
+            } catch { tplEditorError.textContent = "Cannot format — invalid JSON."; }
+        });
+
+        // ── Add new company
+        tplAddCompanyBtn.addEventListener("click", function () {
+            const name = prompt("Company key (e.g. TEAM-X or * for wildcard fallback):");
+            if (!name || !name.trim()) return;
+            const mapping = parseMappingJson();
+            if (!mapping) { tplEditorError.textContent = "Fix Mapping JSON first."; return; }
+            if (!mapping.CompanyTemplates) mapping.CompanyTemplates = {};
+            if (!mapping.CompanyTemplates[name.trim()]) {
+                mapping.CompanyTemplates[name.trim()] = { StrictMode: true, Defaults: {}, RequiredTargets: [] };
+            }
+            mappingBox.value = JSON.stringify(mapping, null, 2);
+            tplLoadAll();
+            tplCompanySelect.value = name.trim();
+            tplShowSelected(mapping.CompanyTemplates);
+        });
+
+        // ── Delete company
+        tplDeleteBtn.addEventListener("click", function () {
+            const key = tplCompanySelect.value;
+            if (!key) return;
+            if (!confirm("Delete company template '" + key + "'?")) return;
+            const mapping = parseMappingJson();
+            if (!mapping || !mapping.CompanyTemplates) return;
+            delete mapping.CompanyTemplates[key];
+            mappingBox.value = JSON.stringify(mapping, null, 2);
+            tplLoadAll();
+        });
+
+        // ── Apply: merge editor JSON back into CompanyTemplates in mapping
+        tplApplyBtn.addEventListener("click", function () {
+            tplEditorError.textContent = "";
+            const key = tplCompanySelect.value;
+            if (!key) { tplEditorError.textContent = "No company selected."; return; }
+
+            let profile;
+            try { profile = JSON.parse(tplJsonEditor.value); }
+            catch { tplEditorError.textContent = "JSON in editor is invalid — fix it before applying."; return; }
+
+            const mapping = parseMappingJson();
+            if (!mapping) { tplEditorError.textContent = "Mapping JSON is invalid."; return; }
+            if (!mapping.CompanyTemplates) mapping.CompanyTemplates = {};
+            mapping.CompanyTemplates[key] = profile;
+
+            mappingBox.value = JSON.stringify(mapping, null, 2);
+
+            // refresh view
+            const pretty = JSON.stringify(profile, null, 2);
+            tplJsonView.innerHTML = syntaxHL(pretty);
+            tplEditorError.textContent = "";
+
+            const badge = document.createElement("span");
+            badge.className = "text-success ms-2"; badge.style.fontSize = "0.82rem";
+            badge.textContent = "Applied ✓";
+            tplApplyBtn.parentNode.appendChild(badge);
+            setTimeout(() => badge.remove(), 2000);
+        });
+
+        // ── When mapping box changes externally, reload panel if open
+        mappingBox.addEventListener("input", function () {
+            if (tplOpen) tplLoadAll();
+        });
+        // ──────────────────────────────────────────────────────────────────
     })();
     </script>
 }
