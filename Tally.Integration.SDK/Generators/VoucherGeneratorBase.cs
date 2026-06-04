@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace Tally.Integration.SDK.Generators
@@ -74,10 +75,17 @@ namespace Tally.Integration.SDK.Generators
                 }
 
                 var value = field.Value ?? string.Empty;
-                voucher.Add(new XElement(field.Key, value));
+                AddDynamicField(voucher, field.Key, value);
             }
 
-            AddLedgerEntries(voucher, partyLedgerName, counterLedger, amount);
+            var hasExplicitLedgerEntries = normalized.Keys.Any(k =>
+                k.IndexOf("ALLLEDGERENTRIES", StringComparison.OrdinalIgnoreCase) >= 0
+                || k.IndexOf("LEDGERENTRIES", StringComparison.OrdinalIgnoreCase) >= 0);
+
+            if (!hasExplicitLedgerEntries)
+            {
+                AddLedgerEntries(voucher, partyLedgerName, counterLedger, amount);
+            }
 
             var envelope = new XDocument(
                 new XElement("ENVELOPE",
@@ -110,6 +118,86 @@ namespace Tally.Integration.SDK.Generators
                 || key.Equals("SALESLEDGERNAME", StringComparison.OrdinalIgnoreCase)
                 || key.Equals("PURCHASELEDGERNAME", StringComparison.OrdinalIgnoreCase)
                 || key.Equals("BANKLEDGERNAME", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void AddDynamicField(XElement voucher, string targetPath, string value)
+        {
+            if (string.IsNullOrWhiteSpace(targetPath))
+            {
+                return;
+            }
+
+            if (targetPath.IndexOf('/') < 0)
+            {
+                voucher.Add(new XElement(targetPath, value));
+                return;
+            }
+
+            var segments = targetPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            XElement current = voucher;
+            for (var i = 0; i < segments.Length; i++)
+            {
+                var segment = segments[i].Trim();
+                if (segment.Length == 0)
+                {
+                    continue;
+                }
+
+                var isLeaf = i == segments.Length - 1;
+                var parsed = ParseSegment(segment);
+                var child = GetOrCreateIndexedChild(current, parsed.Name, parsed.Index, isLeaf ? value : null);
+                current = child;
+            }
+        }
+
+        private static ParsedSegment ParseSegment(string segment)
+        {
+            var open = segment.LastIndexOf('[');
+            var close = segment.LastIndexOf(']');
+            if (open > 0 && close > open)
+            {
+                var name = segment.Substring(0, open);
+                var indexText = segment.Substring(open + 1, close - open - 1);
+                int index;
+                if (int.TryParse(indexText, out index) && index >= 0)
+                {
+                    return new ParsedSegment(name, index);
+                }
+            }
+
+            return new ParsedSegment(segment, 0);
+        }
+
+        private static XElement GetOrCreateIndexedChild(XElement parent, string name, int index, string value)
+        {
+            var matches = parent.Elements(name).ToList();
+            while (matches.Count <= index)
+            {
+                var created = new XElement(name);
+                parent.Add(created);
+                matches.Add(created);
+            }
+
+            var target = matches[index];
+            if (value != null)
+            {
+                target.Value = value;
+            }
+
+            return target;
+        }
+
+        private struct ParsedSegment
+        {
+            public ParsedSegment(string name, int index)
+            {
+                Name = name;
+                Index = index;
+            }
+
+            public string Name { get; private set; }
+
+            public int Index { get; private set; }
         }
 
         private static string GetOrDefault(Dictionary<string, string> data, string key, string defaultValue)

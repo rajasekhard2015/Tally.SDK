@@ -104,6 +104,8 @@ class Program
             EnablePushToTally = true,
             CompanyName = "Team-X",
             AutoCreateMissingLedgers = true,
+          AutoCreateMissingStockItems = true,
+          EnforcePreValidation = true,
             AutoFallbackVoucherDateOnDateError = true,
             FallbackVoucherDate = new DateTime(2026, 4, 2)
         };
@@ -147,6 +149,25 @@ Notes:
 - No hardcoded source-to-target field mappings are required in code.
 - `voucherType` parameter overrides `VoucherType` in mapping file when provided.
 
+### 7.1 Fully dynamic repeated-node mapping
+
+Use `[*]` in source and target paths for variable-length collections:
+
+```json
+{
+  "VoucherType": "Sales",
+  "Mappings": {
+    "Items/Item[*]/StockItem": "ALLINVENTORYENTRIES.LIST[*]/STOCKITEMNAME",
+    "Items/Item[*]/Quantity": "ALLINVENTORYENTRIES.LIST[*]/BILLEDQTY",
+    "Items/Item[*]/Amount": "ALLINVENTORYENTRIES.LIST[*]/AMOUNT",
+    "LedgerEntries/Ledger[*]/Name": "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME",
+    "LedgerEntries/Ledger[*]/Amount": "ALLLEDGERENTRIES.LIST[*]/AMOUNT"
+  }
+}
+```
+
+At runtime SDK expands wildcard indexes automatically (`[*]` -> `[0]`, `[1]`, `[2]`, ...).
+
 ## 8. Voucher Type Support
 
 ### 7.1 Built-in voucher generators
@@ -181,10 +202,34 @@ Examples:
   - Sets Tally company context (`SVCURRENTCOMPANY`) for imports
 - `AutoCreateMissingLedgers`
   - Automatically creates missing ledgers and retries once
+- `AutoCreateMissingStockItems`
+  - Automatically creates missing stock items and retries once
+- `EnforcePreValidation`
+  - Enables voucher rule-pack checks before XML generation/push
 - `AutoFallbackVoucherDateOnDateError`
   - Retries with fallback date if Tally returns date-related errors
 - `FallbackVoucherDate`
   - Date used for retry when date errors occur
+
+Sales/Purchase-only mode:
+
+- `RestrictToSalesAndPurchase` (default: `true`)
+  - Only `Sales` and `Purchase` voucher types are accepted.
+  - Any other voucher type returns a controlled SDK response without pushing to Tally.
+
+Unsupported voucher response contract:
+
+- `Success = false`
+- `Errors = 1`
+- `PushToTallyAttempted = false`
+- `ErrorMessage = "Unsupported voucher type: <type>. Currently supported voucher types are Sales and Purchase."`
+- `RequestObject` contains mapped data for diagnostics
+
+Voucher Rule Pack coverage (when `EnforcePreValidation = true`):
+
+- Sales/Purchase: party or ledger entries required; inventory or core sales/purchase ledger checks
+- Receipt/Payment/Journal/Credit Note/Debit Note: minimum 2 ledger amounts + balance checks
+- All vouchers: DATE required in `yyyyMMdd`
 
 ## 10. Import Result Fields
 

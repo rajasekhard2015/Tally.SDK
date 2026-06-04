@@ -55,6 +55,11 @@ namespace Tally.Integration.SDK
         public string CompanyName { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether only Sales and Purchase vouchers are allowed.
+        /// </summary>
+        public bool RestrictToSalesAndPurchase { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TallySdk"/> class.
         /// </summary>
         public TallySdk()
@@ -93,6 +98,7 @@ namespace Tally.Integration.SDK
             AutoFallbackVoucherDateOnDateError = true;
             FallbackVoucherDate = null;
             CompanyName = string.Empty;
+            RestrictToSalesAndPurchase = true;
         }
 
         /// <summary>
@@ -226,6 +232,18 @@ namespace Tally.Integration.SDK
                 ? mapping.VoucherType
                 : voucherType;
 
+            if (RestrictToSalesAndPurchase && !IsSalesOrPurchase(selectedVoucherType))
+            {
+                return new ImportResult
+                {
+                    Success = false,
+                    Errors = 1,
+                    ErrorMessage = "Unsupported voucher type: " + (selectedVoucherType ?? string.Empty) + ". Currently supported voucher types are Sales and Purchase.",
+                    RequestObject = mappedData,
+                    PushToTallyAttempted = false
+                };
+            }
+
             var generator = VoucherGeneratorFactory.Create(selectedVoucherType);
             var xml = generator.Generate(mappedData);
 
@@ -289,6 +307,17 @@ namespace Tally.Integration.SDK
                 || message.Contains("date is out of range")
                 || message.Contains("invalid date")
                 || message.Contains("period") && message.Contains("date");
+        }
+
+        private static bool IsSalesOrPurchase(string voucherType)
+        {
+            if (string.IsNullOrWhiteSpace(voucherType))
+            {
+                return false;
+            }
+
+            var normalized = voucherType.Trim().ToLowerInvariant();
+            return normalized == "sales" || normalized == "purchase";
         }
 
         private bool TryCreateMissingLedgers(string responseXml)

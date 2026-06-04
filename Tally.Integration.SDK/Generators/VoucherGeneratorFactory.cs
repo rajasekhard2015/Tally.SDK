@@ -26,20 +26,9 @@ namespace Tally.Integration.SDK.Generators
                     return new SalesVoucherGenerator();
                 case "purchase":
                     return new PurchaseVoucherGenerator();
-                case "receipt":
-                    return new ReceiptVoucherGenerator();
-                case "payment":
-                    return new PaymentVoucherGenerator();
-                case "journal":
-                    return new JournalVoucherGenerator();
-                case "creditnote":
-                case "credit note":
-                    return new CreditNoteGenerator();
-                case "debitnote":
-                case "debit note":
-                    return new DebitNoteGenerator();
                 default:
-                    return new GenericVoucherGenerator(voucherType);
+                    throw new NotSupportedException(
+                        "Unsupported voucher type: " + voucherType + ". Currently supported generator types are Sales and Purchase.");
             }
         }
     }

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using Newtonsoft.Json;
 
 namespace Tally.Integration.SDK.Parsers
 {
@@ -21,20 +21,8 @@ namespace Tally.Integration.SDK.Parsers
                 throw new ArgumentNullException("obj");
             }
 
-            var result = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            var properties = obj.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
-
-            foreach (var property in properties)
-            {
-                if (!property.CanRead)
-                {
-                    continue;
-                }
-
-                result[property.Name] = property.GetValue(obj, null);
-            }
-
-            return result;
+            var json = JsonConvert.SerializeObject(obj);
+            return new JsonParser().Parse(json);
         }
     }
 }

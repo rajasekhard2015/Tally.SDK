@@ -1,0 +1,440 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Tally Web Tester";
+}
+
+<style>
+    .page-wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .soft-card {
+        border: 1px solid #dce3ef;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #f9fbff 0%, #f4f8ff 100%);
+        box-shadow: 0 6px 16px rgba(22, 44, 77, 0.08);
+    }
+
+    .result-card {
+        border: 1px solid #dbe6da;
+        border-radius: 14px;
+        background: #f8fcf8;
+    }
+
+    .field-title {
+        font-weight: 600;
+        color: #27384f;
+        margin-bottom: 6px;
+    }
+
+    textarea.form-control {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.92rem;
+    }
+</style>
+
+<div class="container py-4 page-wrap">
+    <div class="soft-card p-4 mb-4">
+        <h2 class="mb-2">Tally End-to-End Tester</h2>
+        <p class="text-muted mb-0">Choose input type, select voucher, paste payload and mapping JSON, then convert and optionally push to Tally.</p>
+    </div>
+
+    <form method="post" id="importForm" novalidate>
+        <div class="soft-card p-4">
+            <div asp-validation-summary="All" class="text-danger mb-2"></div>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="field-title" asp-for="Input.InputType">Input Type</label>
+                    <select id="inputType" class="form-select" asp-for="Input.InputType">
+                        <option value="json">JSON</option>
+                        <option value="xml">XML</option>
+                    </select>
+                    <span asp-validation-for="Input.InputType" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="field-title" asp-for="Input.VoucherType">Voucher Type</label>
+                    <select id="voucherType" class="form-select" asp-for="Input.VoucherType">
+                        @foreach (var voucher in Model.SupportedVoucherTypes)
+                        {
+                            <option value="@voucher">@voucher</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Input.VoucherType" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="field-title" asp-for="Input.TallyUrl">Tally URL</label>
+                    <input class="form-control" asp-for="Input.TallyUrl" />
+                    <span asp-validation-for="Input.TallyUrl" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="field-title" asp-for="Input.TimeoutMs">Timeout (ms)</label>
+                    <input class="form-control" asp-for="Input.TimeoutMs" />
+                    <span asp-validation-for="Input.TimeoutMs" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-5">
+                    <label class="field-title" asp-for="Input.CompanyName">Company Name (optional)</label>
+                    <input class="form-control" asp-for="Input.CompanyName" />
+                </div>
+
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" asp-for="Input.EnablePush" />
+                        <label class="form-check-label" asp-for="Input.EnablePush">Enable Push To Tally</label>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="field-title" asp-for="Input.Payload">Input Payload (JSON or XML)</label>
+                    <textarea id="payloadBox" class="form-control" rows="11" asp-for="Input.Payload"></textarea>
+                    <span asp-validation-for="Input.Payload" class="text-danger"></span>
+                    <span id="payloadFormatError" class="text-danger"></span>
+                    <div class="mt-2">
+                        <button id="loadTemplateBtn" class="btn btn-outline-secondary btn-sm" type="button">Load Payload Template</button>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="field-title" asp-for="Input.MappingJson">Mapping JSON (dynamic)</label>
+                    <textarea id="mappingBox" class="form-control" rows="11" asp-for="Input.MappingJson"></textarea>
+                    <span asp-validation-for="Input.MappingJson" class="text-danger"></span>
+                    <span id="mappingFormatError" class="text-danger"></span>
+                    <div class="mt-2 d-flex gap-2">
+                        <button id="generateMappingBtn" class="btn btn-outline-primary btn-sm" type="button">Generate Mapping from Payload</button>
+                        <button id="resetMappingTemplateBtn" class="btn btn-outline-secondary btn-sm" type="button">Reset Mapping Template</button>
+                    </div>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button class="btn btn-primary" type="submit">Convert / Push</button>
+                    <button class="btn btn-outline-dark" type="reset">Reset</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="result-card p-4 mt-4">
+        <h4 class="mb-3">Result</h4>
+        <p><strong>Status:</strong> @Model.Result.StatusMessage</p>
+        <p><strong>Success:</strong> @Model.Result.Success</p>
+        <p><strong>Created:</strong> @Model.Result.Created | <strong>Altered:</strong> @Model.Result.Altered | <strong>Deleted:</strong> @Model.Result.Deleted | <strong>Errors:</strong> @Model.Result.Errors</p>
+
+        @if (Model.Result.ValidationErrors != null && Model.Result.ValidationErrors.Count > 0)
+        {
+            <div class="alert alert-danger" role="alert">
+                <div><strong>Please fix these errors:</strong></div>
+                <ul class="mb-0 mt-2">
+                    @foreach (var err in Model.Result.ValidationErrors)
+                    {
+                        <li>@err</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <div class="mb-3">
+            <label class="field-title">Error Message</label>
+            <textarea class="form-control" rows="3" readonly>@Model.Result.ErrorMessage</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="field-title">Mapped Request Object (JSON)</label>
+            <textarea class="form-control" rows="8" readonly>@Model.Result.RequestObjectJson</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="field-title">Generated Tally XML</label>
+            <textarea class="form-control" rows="10" readonly>@Model.Result.RequestXml</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="field-title">Tally Response XML</label>
+            <textarea class="form-control" rows="10" readonly>@Model.Result.ResponseXml</textarea>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    (function() {
+        const form = document.getElementById("importForm");
+        const inputType = document.getElementById("inputType");
+        const voucherType = document.getElementById("voucherType");
+        const payloadBox = document.getElementById("payloadBox");
+        const mappingBox = document.getElementById("mappingBox");
+        const loadTemplateBtn = document.getElementById("loadTemplateBtn");
+        const generateMappingBtn = document.getElementById("generateMappingBtn");
+        const resetMappingTemplateBtn = document.getElementById("resetMappingTemplateBtn");
+        const mappingFormatError = document.getElementById("mappingFormatError");
+        const payloadFormatError = document.getElementById("payloadFormatError");
+
+        const jsonTemplate = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.JsonPayloadTemplate));
+        const xmlTemplate = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.XmlPayloadTemplate));
+        const mappingTemplates = @Html.Raw(Model.MappingTemplatesJson);
+
+        function getTemplate() {
+            return inputType.value === "xml" ? xmlTemplate : jsonTemplate;
+        }
+
+        function getMappingTemplate() {
+            return mappingTemplates[voucherType.value] || mappingTemplates["Sales"];
+        }
+
+        function getEffectiveVoucherType() {
+            return voucherType.value || "Sales";
+        }
+
+        function flattenJsonPaths(input) {
+            const paths = [];
+
+            function walk(value, currentPath) {
+                if (Array.isArray(value)) {
+                    for (let i = 0; i < value.length; i++) {
+                        const nextPath = currentPath ? `${currentPath}[${i}]` : `[${i}]`;
+                        walk(value[i], nextPath);
+                    }
+                    return;
+                }
+
+                if (value && typeof value === "object") {
+                    const keys = Object.keys(value);
+                    if (keys.length === 0 && currentPath) {
+                        paths.push(currentPath);
+                    }
+
+                    keys.forEach(k => {
+                        const nextPath = currentPath ? `${currentPath}/${k}` : k;
+                        walk(value[k], nextPath);
+                    });
+                    return;
+                }
+
+                if (currentPath) {
+                    paths.push(currentPath);
+                }
+            }
+
+            walk(input, "");
+            return Array.from(new Set(paths));
+        }
+
+        function extractXmlLeafPaths(xmlText) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xmlText, "application/xml");
+            if (doc.getElementsByTagName("parsererror").length > 0) {
+                return null;
+            }
+
+            const root = doc.documentElement;
+            if (!root) {
+                return [];
+            }
+
+            const result = [];
+
+            function walk(node, currentPath) {
+                const elementChildren = Array.from(node.children || []);
+                if (elementChildren.length === 0) {
+                    result.push(currentPath);
+                    return;
+                }
+
+                const group = {};
+                for (const child of elementChildren) {
+                    const key = child.nodeName;
+                    if (!group[key]) {
+                        group[key] = [];
+                    }
+                    group[key].push(child);
+                }
+
+                Object.keys(group).forEach(name => {
+                    const siblings = group[name];
+                    siblings.forEach((child, index) => {
+                        const segment = siblings.length > 1 ? `${name}[${index}]` : name;
+                        walk(child, `${currentPath}/${segment}`);
+                    });
+                });
+            }
+
+            walk(root, root.nodeName);
+
+            const noRoot = result.map(p => {
+                const idx = p.indexOf("/");
+                return idx < 0 ? p : p.substring(idx + 1);
+            });
+
+            return Array.from(new Set(noRoot));
+        }
+
+        function leafNameFromPath(path) {
+            if (!path) {
+                return "";
+            }
+
+            const normalized = path.replace(/\\./g, "/");
+            const segments = normalized.split("/").filter(Boolean);
+            if (segments.length === 0) {
+                return path;
+            }
+
+            return segments[segments.length - 1].replace(/\[[0-9]+\]$/g, "");
+        }
+
+        function suggestTallyField(sourceKey) {
+            const leaf = leafNameFromPath(sourceKey);
+            const key = (leaf || "").toLowerCase();
+            if (key.includes("invoice") && (key.includes("no") || key.includes("number"))) {
+                return "VOUCHERNUMBER";
+            }
+            if (key.includes("voucher") && (key.includes("no") || key.includes("number"))) {
+                return "VOUCHERNUMBER";
+            }
+            if (key.includes("customer") || key.includes("party") || key.includes("ledger")) {
+                return "PARTYLEDGERNAME";
+            }
+            if (key.includes("date")) {
+                return "DATE";
+            }
+            if (key.includes("amount") || key.includes("total") || key.includes("value")) {
+                return "AMOUNT";
+            }
+
+            return leaf.toUpperCase().replace(/\s+/g, "");
+        }
+
+        function buildMappingsFromKeys(keys) {
+            const mappings = {};
+            keys.forEach(k => {
+                mappings[k] = suggestTallyField(k);
+            });
+            return mappings;
+        }
+
+        function generateMappingFromPayload() {
+            clearInlineErrors();
+            const payloadText = payloadBox.value || "";
+            if (!payloadText.trim()) {
+                payloadFormatError.textContent = "Payload is empty. Add payload before generating mapping.";
+                return;
+            }
+
+            let keys = [];
+            if (inputType.value === "json") {
+                try {
+                    const parsed = JSON.parse(payloadText);
+                    keys = flattenJsonPaths(parsed);
+                } catch {
+                    payloadFormatError.textContent = "Payload must be valid JSON to auto-generate mapping.";
+                    return;
+                }
+            } else {
+                const xmlKeys = extractXmlLeafPaths(payloadText);
+                if (xmlKeys === null) {
+                    payloadFormatError.textContent = "Payload must be valid XML to auto-generate mapping.";
+                    return;
+                }
+                keys = xmlKeys;
+            }
+
+            if (!keys || keys.length === 0) {
+                mappingFormatError.textContent = "No usable fields found in payload for mapping generation.";
+                return;
+            }
+
+            const mapping = {
+                VoucherType: getEffectiveVoucherType(),
+                Mappings: buildMappingsFromKeys(keys)
+            };
+
+            mappingBox.value = JSON.stringify(mapping, null, 2);
+        }
+
+        function validateJson(text) {
+            try {
+                JSON.parse(text);
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
+        function validateXml(text) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, "application/xml");
+            return doc.getElementsByTagName("parsererror").length === 0;
+        }
+
+        function clearInlineErrors() {
+            mappingFormatError.textContent = "";
+            payloadFormatError.textContent = "";
+        }
+
+        function validateBeforeSubmit() {
+            clearInlineErrors();
+            let valid = true;
+
+            if (!validateJson(mappingBox.value || "")) {
+                mappingFormatError.textContent = "Mapping JSON must be valid JSON.";
+                valid = false;
+            }
+
+            if (inputType.value === "json") {
+                if (!validateJson(payloadBox.value || "")) {
+                    payloadFormatError.textContent = "Payload must be valid JSON for JSON input type.";
+                    valid = false;
+                }
+            } else {
+                if (!validateXml(payloadBox.value || "")) {
+                    payloadFormatError.textContent = "Payload must be valid XML for XML input type.";
+                    valid = false;
+                }
+            }
+
+            return valid;
+        }
+
+        function applyTemplateIfEmpty() {
+            if (!payloadBox.value || payloadBox.value.trim().length === 0) {
+                payloadBox.value = getTemplate();
+            }
+        }
+
+        inputType.addEventListener("change", function () {
+            payloadBox.value = getTemplate();
+        });
+
+        voucherType.addEventListener("change", function() {
+            mappingBox.value = getMappingTemplate();
+        });
+
+        loadTemplateBtn.addEventListener("click", function () {
+            payloadBox.value = getTemplate();
+        });
+
+        generateMappingBtn.addEventListener("click", generateMappingFromPayload);
+
+        resetMappingTemplateBtn.addEventListener("click", function() {
+            mappingBox.value = getMappingTemplate();
+            clearInlineErrors();
+        });
+
+        form.addEventListener("submit", function(e) {
+            if (!validateBeforeSubmit()) {
+                e.preventDefault();
+            }
+        });
+
+        applyTemplateIfEmpty();
+        if (!mappingBox.value || mappingBox.value.trim().length === 0) {
+            mappingBox.value = getMappingTemplate();
+        }
+    })();
+    </script>
+}

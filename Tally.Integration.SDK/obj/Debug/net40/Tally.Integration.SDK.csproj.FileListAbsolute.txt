@@ -7,3 +7,4 @@ D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Debug\net40\Tally.Integration.S
 D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Debug\net40\Tally.In.DFBD130F.Up2Date
 D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Debug\net40\Tally.Integration.SDK.dll
 D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Debug\net40\Tally.Integration.SDK.pdb
+D:\TeamX\TallyImporter\Tally.Integration.SDK\obj\Debug\net40\Tally.Integration.SDK.sourcelink.json
