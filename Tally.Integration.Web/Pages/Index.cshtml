@@ -278,7 +278,7 @@
                 return "";
             }
 
-            const normalized = path.replace(/\\./g, "/");
+            const normalized = path.replace(/\./g, "/");
             const segments = normalized.split("/").filter(Boolean);
             if (segments.length === 0) {
                 return path;
@@ -287,14 +287,50 @@
             return segments[segments.length - 1].replace(/\[[0-9]+\]$/g, "");
         }
 
+        function toWildcardPath(path) {
+            return (path || "").replace(/\[[0-9]+\]/g, "[*]");
+        }
+
         function suggestTallyField(sourceKey) {
+            const normalizedPath = toWildcardPath((sourceKey || "").replace(/\\/g, "/"));
             const leaf = leafNameFromPath(sourceKey);
             const key = (leaf || "").toLowerCase();
+
+            if (normalizedPath.includes("party/") && key === "name") {
+                return "PARTYLEDGERNAME";
+            }
+            if (normalizedPath.includes("party/") && key === "gstin") {
+                return "PARTYGSTIN";
+            }
+
+            if (normalizedPath.includes("ledgerentries/ledger[*]/") && key === "name") {
+                return "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME";
+            }
+            if (normalizedPath.includes("ledgerentries/ledger[*]/") && key === "amount") {
+                return "ALLLEDGERENTRIES.LIST[*]/AMOUNT";
+            }
+
+            if (normalizedPath.includes("items/item[*]/") && key === "stockitem") {
+                return "ALLINVENTORYENTRIES.LIST[*]/STOCKITEMNAME";
+            }
+            if (normalizedPath.includes("items/item[*]/") && key === "quantity") {
+                return "ALLINVENTORYENTRIES.LIST[*]/BILLEDQTY";
+            }
+            if (normalizedPath.includes("items/item[*]/") && key === "rate") {
+                return "ALLINVENTORYENTRIES.LIST[*]/RATE";
+            }
+            if (normalizedPath.includes("items/item[*]/") && key === "amount") {
+                return "ALLINVENTORYENTRIES.LIST[*]/AMOUNT";
+            }
+
             if (key.includes("invoice") && (key.includes("no") || key.includes("number"))) {
                 return "VOUCHERNUMBER";
             }
             if (key.includes("voucher") && (key.includes("no") || key.includes("number"))) {
                 return "VOUCHERNUMBER";
+            }
+            if (key === "vouchertype") {
+                return "VOUCHERTYPENAME";
             }
             if (key.includes("customer") || key.includes("party") || key.includes("ledger")) {
                 return "PARTYLEDGERNAME";
@@ -312,7 +348,8 @@
         function buildMappingsFromKeys(keys) {
             const mappings = {};
             keys.forEach(k => {
-                mappings[k] = suggestTallyField(k);
+                const source = toWildcardPath(k);
+                mappings[source] = suggestTallyField(source);
             });
             return mappings;
         }
@@ -348,10 +385,20 @@
                 return;
             }
 
-            const mapping = {
-                VoucherType: getEffectiveVoucherType(),
-                Mappings: buildMappingsFromKeys(keys)
-            };
+            const baseTemplateText = getMappingTemplate();
+            let mapping;
+            try {
+                mapping = JSON.parse(baseTemplateText || "{}");
+            } catch {
+                mapping = {};
+            }
+
+            mapping.VoucherType = getEffectiveVoucherType();
+            const generatedMappings = buildMappingsFromKeys(keys);
+            mapping.Mappings = Object.assign({}, mapping.Mappings || {}, generatedMappings);
+            if (!mapping.CompanyTemplates || typeof mapping.CompanyTemplates !== "object") {
+                mapping.CompanyTemplates = {};
+            }
 
             mappingBox.value = JSON.stringify(mapping, null, 2);
         }

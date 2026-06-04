@@ -21,10 +21,55 @@ public class IndexModel : PageModel
     };
 
     public string JsonPayloadTemplate =>
-        "{\"InvoiceNo\":\"INV-3001\",\"Customer\":\"ABC Traders\",\"InvoiceDate\":\"2026-04-02\",\"Amount\":2500.00}";
+        "{\n" +
+        "  \"VoucherNumber\": \"SAL-3001\",\n" +
+        "  \"VoucherDate\": \"2026-04-02\",\n" +
+        "  \"Party\": {\n" +
+        "    \"Name\": \"ABC Traders\",\n" +
+        "    \"GSTIN\": \"29ABCDE1234F1Z5\"\n" +
+        "  },\n" +
+        "  \"Items\": {\n" +
+        "    \"Item\": [\n" +
+        "      {\n" +
+        "        \"StockItem\": \"Software License\",\n" +
+        "        \"Quantity\": \"10 Nos\",\n" +
+        "        \"Rate\": \"1000\",\n" +
+        "        \"Amount\": \"10000\"\n" +
+        "      },\n" +
+        "      {\n" +
+        "        \"StockItem\": \"Implementation Service\",\n" +
+        "        \"Quantity\": \"1 Nos\",\n" +
+        "        \"Rate\": \"5000\",\n" +
+        "        \"Amount\": \"5000\"\n" +
+        "      }\n" +
+        "    ]\n" +
+        "  },\n" +
+        "  \"LedgerEntries\": {\n" +
+        "    \"Ledger\": [\n" +
+        "      { \"Name\": \"ABC Traders\", \"Amount\": \"15000\" },\n" +
+        "      { \"Name\": \"Sales A/c\", \"Amount\": \"-15000\" }\n" +
+        "    ]\n" +
+        "  },\n" +
+        "  \"TotalAmount\": \"15000\",\n" +
+        "  \"Narration\": \"Sales voucher sample\"\n" +
+        "}";
 
     public string XmlPayloadTemplate =>
-        "<Invoice><InvoiceNo>INV-3001</InvoiceNo><Customer>ABC Traders</Customer><InvoiceDate>2026-04-02</InvoiceDate><Amount>2500.00</Amount></Invoice>";
+        "<VoucherData>" +
+        "<VoucherNumber>SAL-3001</VoucherNumber>" +
+        "<VoucherDate>2026-04-02</VoucherDate>" +
+        "<Party><Name>ABC Traders</Name><GSTIN>29ABCDE1234F1Z5</GSTIN></Party>" +
+        "<Items>" +
+        "<Item><StockItem>Software License</StockItem><Quantity>10 Nos</Quantity><Rate>1000</Rate><Amount>10000</Amount></Item>" +
+        "<Item><StockItem>Implementation Service</StockItem><Quantity>1 Nos</Quantity><Rate>5000</Rate><Amount>5000</Amount></Item>" +
+        "</Items>" +
+        "<LedgerEntries>" +
+        "<Ledger><Name>ABC Traders</Name><Amount>15000</Amount></Ledger>" +
+        "<Ledger><Name>Sales A/c</Name><Amount>-15000</Amount></Ledger>" +
+        "</LedgerEntries>" +
+        "<TotalAmount>15000</TotalAmount>" +
+        "<Narration>Sales voucher sample</Narration>" +
+        "</VoucherData>";
 
     public string MappingTemplatesJson => JsonSerializer.Serialize(BuildMappingTemplates());
 
@@ -205,15 +250,67 @@ public class IndexModel : PageModel
 
     private static string BuildMappingTemplate(string voucherType)
     {
+        var isPurchase = string.Equals(voucherType, "Purchase", StringComparison.OrdinalIgnoreCase);
+        var voucherName = isPurchase ? "Purchase" : "Sales";
+        var counterLedger = isPurchase ? "Purchase A/c" : "Sales A/c";
+
         var definition = new
         {
-            VoucherType = voucherType,
+            VoucherType = voucherName,
             Mappings = new Dictionary<string, string>
             {
-                { "InvoiceNo", "VOUCHERNUMBER" },
-                { "Customer", "PARTYLEDGERNAME" },
-                { "InvoiceDate", "DATE" },
-                { "Amount", "AMOUNT" }
+                { "VoucherNumber", "VOUCHERNUMBER" },
+                { "VoucherDate", "DATE" },
+                { "Party/Name", "PARTYLEDGERNAME" },
+                { "Party/GSTIN", "PARTYGSTIN" },
+                { "Items/Item[*]/StockItem", "ALLINVENTORYENTRIES.LIST[*]/STOCKITEMNAME" },
+                { "Items/Item[*]/Quantity", "ALLINVENTORYENTRIES.LIST[*]/BILLEDQTY" },
+                { "Items/Item[*]/Rate", "ALLINVENTORYENTRIES.LIST[*]/RATE" },
+                { "Items/Item[*]/Amount", "ALLINVENTORYENTRIES.LIST[*]/AMOUNT" },
+                { "LedgerEntries/Ledger[*]/Name", "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME" },
+                { "LedgerEntries/Ledger[*]/Amount", "ALLLEDGERENTRIES.LIST[*]/AMOUNT" },
+                { "TotalAmount", "AMOUNT" },
+                { "Narration", "NARRATION" }
+            },
+            CompanyTemplates = new Dictionary<string, object>
+            {
+                {
+                    "TEAM-X",
+                    new
+                    {
+                        StrictMode = true,
+                        Defaults = new Dictionary<string, string>
+                        {
+                            { "VOUCHERTYPENAME", voucherName },
+                            { "PERSISTEDVIEW", "Invoice Voucher View" },
+                            { "ISINVOICE", "Yes" },
+                            { isPurchase ? "PURCHASELEDGERNAME" : "SALESLEDGERNAME", counterLedger }
+                        },
+                        RequiredTargets = new[]
+                        {
+                            "DATE",
+                            "PARTYLEDGERNAME",
+                            "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME",
+                            "ALLLEDGERENTRIES.LIST[*]/AMOUNT"
+                        }
+                    }
+                },
+                {
+                    "*",
+                    new
+                    {
+                        StrictMode = false,
+                        Defaults = new Dictionary<string, string>
+                        {
+                            { "VOUCHERTYPENAME", voucherName }
+                        },
+                        RequiredTargets = new[]
+                        {
+                            "DATE",
+                            "PARTYLEDGERNAME"
+                        }
+                    }
+                }
             }
         };
 

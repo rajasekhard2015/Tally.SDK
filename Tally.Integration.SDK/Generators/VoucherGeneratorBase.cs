@@ -38,6 +38,10 @@ namespace Tally.Integration.SDK.Generators
             var voucherNumber = GetOrDefault(normalized, "VOUCHERNUMBER", string.Empty);
             var partyLedgerName = GetOrDefault(normalized, "PARTYLEDGERNAME", GetDefaultPartyLedgerName());
             var narration = GetOrDefault(normalized, "NARRATION", string.Empty);
+            var voucherTypeName = GetOrDefault(normalized, "VOUCHERTYPENAME", VoucherType);
+            var persistedView = GetOrDefault(normalized, "PERSISTEDVIEW", "Accounting Voucher View");
+            var isInvoice = GetOrDefault(normalized, "ISINVOICE", "No");
+            var effectiveDate = GetOrDefault(normalized, "EFFECTIVEDATE", voucherDate);
             var amount = GetAmount(normalized);
             var counterLedger = GetCounterLedgerName(normalized);
 
@@ -46,10 +50,10 @@ namespace Tally.Integration.SDK.Generators
                 new XAttribute("ACTION", "Create"),
                 new XAttribute("OBJVIEW", "Accounting Voucher View"),
                 new XElement("DATE", voucherDate),
-                new XElement("VOUCHERTYPENAME", VoucherType),
-                new XElement("PERSISTEDVIEW", "Accounting Voucher View"),
-                new XElement("ISINVOICE", "No"),
-                new XElement("EFFECTIVEDATE", voucherDate));
+                new XElement("VOUCHERTYPENAME", voucherTypeName),
+                new XElement("PERSISTEDVIEW", persistedView),
+                new XElement("ISINVOICE", isInvoice),
+                new XElement("EFFECTIVEDATE", effectiveDate));
 
             if (!string.IsNullOrWhiteSpace(voucherNumber))
             {

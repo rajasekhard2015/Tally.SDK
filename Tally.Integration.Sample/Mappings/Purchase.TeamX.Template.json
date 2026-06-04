@@ -1,0 +1,44 @@
+{
+  "VoucherType": "Purchase",
+  "Mappings": {
+    "VoucherNumber": "VOUCHERNUMBER",
+    "VoucherDate": "DATE",
+    "Party/Name": "PARTYLEDGERNAME",
+    "Party/GSTIN": "PARTYGSTIN",
+    "Items/Item[*]/StockItem": "ALLINVENTORYENTRIES.LIST[*]/STOCKITEMNAME",
+    "Items/Item[*]/Quantity": "ALLINVENTORYENTRIES.LIST[*]/BILLEDQTY",
+    "Items/Item[*]/Rate": "ALLINVENTORYENTRIES.LIST[*]/RATE",
+    "Items/Item[*]/Amount": "ALLINVENTORYENTRIES.LIST[*]/AMOUNT",
+    "LedgerEntries/Ledger[*]/Name": "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME",
+    "LedgerEntries/Ledger[*]/Amount": "ALLLEDGERENTRIES.LIST[*]/AMOUNT",
+    "TotalAmount": "AMOUNT",
+    "Narration": "NARRATION"
+  },
+  "CompanyTemplates": {
+    "TEAM-X": {
+      "StrictMode": true,
+      "Defaults": {
+        "VOUCHERTYPENAME": "Purchase",
+        "PERSISTEDVIEW": "Invoice Voucher View",
+        "ISINVOICE": "Yes",
+        "PURCHASELEDGERNAME": "Purchase A/c"
+      },
+      "RequiredTargets": [
+        "DATE",
+        "PARTYLEDGERNAME",
+        "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME",
+        "ALLLEDGERENTRIES.LIST[*]/AMOUNT"
+      ]
+    },
+    "*": {
+      "StrictMode": false,
+      "Defaults": {
+        "VOUCHERTYPENAME": "Purchase"
+      },
+      "RequiredTargets": [
+        "DATE",
+        "PARTYLEDGERNAME"
+      ]
+    }
+  }
+}

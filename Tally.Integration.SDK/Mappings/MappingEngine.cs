@@ -42,6 +42,19 @@ namespace Tally.Integration.SDK.Mappings
             {
                 definition.Mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             }
+            else
+            {
+                definition.Mappings = new Dictionary<string, string>(definition.Mappings, StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (definition.CompanyTemplates == null)
+            {
+                definition.CompanyTemplates = new Dictionary<string, CompanyTemplateProfile>(StringComparer.OrdinalIgnoreCase);
+            }
+            else
+            {
+                definition.CompanyTemplates = new Dictionary<string, CompanyTemplateProfile>(definition.CompanyTemplates, StringComparer.OrdinalIgnoreCase);
+            }
 
             return definition;
         }

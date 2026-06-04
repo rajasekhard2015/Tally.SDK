@@ -33,6 +33,9 @@ The SDK converts input to mapped Tally fields, generates Tally XML, and imports 
 - SDK project: `Tally.Integration.SDK`
 - Sample app: `Tally.Integration.Sample`
 - Sample mapping JSON: `Tally.Integration.Sample/Mappings/Sales.json`
+- Company template samples:
+  - `Tally.Integration.Sample/Mappings/Sales.TeamX.Template.json`
+  - `Tally.Integration.Sample/Mappings/Purchase.TeamX.Template.json`
 
 ## 4. Core API
 
@@ -167,6 +170,55 @@ Use `[*]` in source and target paths for variable-length collections:
 ```
 
 At runtime SDK expands wildcard indexes automatically (`[*]` -> `[0]`, `[1]`, `[2]`, ...).
+
+### 7.2 Company-based template rules
+
+You can define company-level template profiles inside the same mapping JSON:
+
+```json
+{
+  "VoucherType": "Sales",
+  "Mappings": {
+    "VoucherDate": "DATE",
+    "Party/Name": "PARTYLEDGERNAME",
+    "Items/Item[*]/StockItem": "ALLINVENTORYENTRIES.LIST[*]/STOCKITEMNAME",
+    "Items/Item[*]/Amount": "ALLINVENTORYENTRIES.LIST[*]/AMOUNT"
+  },
+  "CompanyTemplates": {
+    "TEAM-X": {
+      "StrictMode": true,
+      "Defaults": {
+        "VOUCHERTYPENAME": "Sales",
+        "PERSISTEDVIEW": "Invoice Voucher View"
+      },
+      "RequiredTargets": [
+        "DATE",
+        "PARTYLEDGERNAME",
+        "ALLINVENTORYENTRIES.LIST[*]/STOCKITEMNAME",
+        "ALLINVENTORYENTRIES.LIST[*]/AMOUNT",
+        "ALLLEDGERENTRIES.LIST[*]/LEDGERNAME",
+        "ALLLEDGERENTRIES.LIST[*]/AMOUNT"
+      ]
+    },
+    "*": {
+      "StrictMode": false,
+      "Defaults": {
+        "VOUCHERTYPENAME": "Sales"
+      },
+      "RequiredTargets": [
+        "DATE",
+        "PARTYLEDGERNAME"
+      ]
+    }
+  }
+}
+```
+
+How it works:
+
+- SDK picks profile by `CompanyName` on `TallySdk`; if not found, `*` profile is used (when present).
+- `Defaults` are injected only when mapped target value is missing/blank.
+- When `StrictMode` is `true`, missing `RequiredTargets` fail import before XML generation.
 
 ## 8. Voucher Type Support
 

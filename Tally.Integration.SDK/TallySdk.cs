@@ -244,6 +244,31 @@ namespace Tally.Integration.SDK
                 };
             }
 
+            var templateProfile = ResolveCompanyTemplate(mapping);
+            if (templateProfile != null)
+            {
+                ApplyTemplateDefaults(mappedData, templateProfile);
+
+                if (templateProfile.StrictMode)
+                {
+                    var missingTargets = ValidateRequiredTargets(mappedData, templateProfile);
+                    if (missingTargets.Count > 0)
+                    {
+                        var guidance = BuildMissingTargetGuidance(missingTargets);
+                        return new ImportResult
+                        {
+                            Success = false,
+                            Errors = 1,
+                            ErrorMessage = "Company template validation failed. Missing required target fields: "
+                                + string.Join(", ", missingTargets)
+                                + ". " + guidance,
+                            RequestObject = mappedData,
+                            PushToTallyAttempted = false
+                        };
+                    }
+                }
+            }
+
             var generator = VoucherGeneratorFactory.Create(selectedVoucherType);
             var xml = generator.Generate(mappedData);
 
@@ -292,7 +317,131 @@ namespace Tally.Integration.SDK
                 result.RequestXml = xml;
             }
 
+            if (!result.Success)
+            {
+                var guidance = BuildTemplateUpdateGuidance(result.ResponseXml, mappedData, templateProfile, selectedVoucherType);
+                if (!string.IsNullOrWhiteSpace(guidance))
+                {
+                    result.ErrorMessage = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                        ? guidance
+                        : result.ErrorMessage + " | Template Guidance: " + guidance;
+                }
+            }
+
             return result;
+        }
+
+        private static string BuildMissingTargetGuidance(List<string> missingTargets)
+        {
+            if (missingTargets == null || missingTargets.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return "Update mapping JSON and CompanyTemplates.RequiredTargets/Defaults for these fields.";
+        }
+
+        private string BuildTemplateUpdateGuidance(
+            string responseXml,
+            Dictionary<string, object> mappedData,
+            CompanyTemplateProfile templateProfile,
+            string voucherType)
+        {
+            var hints = new List<string>();
+
+            if (templateProfile == null)
+            {
+                hints.Add("Add CompanyTemplates section with StrictMode, Defaults and RequiredTargets.");
+            }
+
+            if (!HasRequiredTarget(mappedData, "DATE"))
+            {
+                hints.Add("Map source date to DATE and include DATE in RequiredTargets.");
+            }
+
+            if (!HasRequiredTarget(mappedData, "PARTYLEDGERNAME"))
+            {
+                hints.Add("Map party field to PARTYLEDGERNAME and include it in RequiredTargets.");
+            }
+
+            if (!HasRequiredTarget(mappedData, "ALLLEDGERENTRIES.LIST[*]/AMOUNT") && !CanAutoGenerateLedgerEntries(mappedData))
+            {
+                hints.Add("Provide explicit ALLLEDGERENTRIES.LIST[*]/LEDGERNAME and /AMOUNT mappings, or map AMOUNT for auto-ledger generation.");
+            }
+
+            if ((voucherType ?? string.Empty).Trim().Equals("sales", StringComparison.OrdinalIgnoreCase)
+                && !HasRequiredTarget(mappedData, "ALLINVENTORYENTRIES.LIST[*]/STOCKITEMNAME")
+                && !HasRequiredTarget(mappedData, "SALESLEDGERNAME"))
+            {
+                hints.Add("For Sales, map inventory lines to ALLINVENTORYENTRIES.LIST[*]/... or set SALESLEDGERNAME default.");
+            }
+
+            if ((voucherType ?? string.Empty).Trim().Equals("purchase", StringComparison.OrdinalIgnoreCase)
+                && !HasRequiredTarget(mappedData, "ALLINVENTORYENTRIES.LIST[*]/STOCKITEMNAME")
+                && !HasRequiredTarget(mappedData, "PURCHASELEDGERNAME"))
+            {
+                hints.Add("For Purchase, map inventory lines to ALLINVENTORYENTRIES.LIST[*]/... or set PURCHASELEDGERNAME default.");
+            }
+
+            AppendTallyLineErrorHints(responseXml, hints);
+
+            if (hints.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" ", hints.Distinct(StringComparer.OrdinalIgnoreCase));
+        }
+
+        private static void AppendTallyLineErrorHints(string responseXml, List<string> hints)
+        {
+            if (string.IsNullOrWhiteSpace(responseXml) || hints == null)
+            {
+                return;
+            }
+
+            List<string> lineErrors;
+            try
+            {
+                var doc = XDocument.Parse(responseXml);
+                lineErrors = doc.Descendants("LINEERROR").Select(x => x.Value).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+            }
+            catch
+            {
+                return;
+            }
+
+            if (lineErrors.Count == 0)
+            {
+                return;
+            }
+
+            var all = string.Join(" | ", lineErrors).ToLowerInvariant();
+
+            if (all.Contains("ledger") && all.Contains("does not exist"))
+            {
+                hints.Add("Ledger master missing: update company template defaults or create ledger masters in Tally.");
+            }
+
+            if (all.Contains("stock item") && all.Contains("does not exist"))
+            {
+                hints.Add("Stock item master missing: map STOCKITEMNAME correctly and create missing stock items in company.");
+            }
+
+            if (all.Contains("date") && (all.Contains("missing") || all.Contains("out of range") || all.Contains("period")))
+            {
+                hints.Add("Date issue: ensure DATE maps to yyyyMMdd and falls inside company financial period.");
+            }
+
+            if (all.Contains("gst") || all.Contains("tax"))
+            {
+                hints.Add("Tax/GST issue: add required GST target mappings/defaults per company configuration.");
+            }
+
+            if (all.Contains("amount") && (all.Contains("mismatch") || all.Contains("balance")))
+            {
+                hints.Add("Amount balancing issue: ensure ledger entry amounts balance and signs match voucher rules.");
+            }
         }
 
         private static bool IsDateRelatedFailure(string responseXml)
@@ -318,6 +467,197 @@ namespace Tally.Integration.SDK
 
             var normalized = voucherType.Trim().ToLowerInvariant();
             return normalized == "sales" || normalized == "purchase";
+        }
+
+        private CompanyTemplateProfile ResolveCompanyTemplate(MappingDefinition mapping)
+        {
+            if (mapping == null || mapping.CompanyTemplates == null || mapping.CompanyTemplates.Count == 0)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(CompanyName))
+            {
+                CompanyTemplateProfile profile;
+                if (mapping.CompanyTemplates.TryGetValue(CompanyName.Trim(), out profile))
+                {
+                    return profile;
+                }
+
+                var wanted = NormalizeCompanyKey(CompanyName);
+                foreach (var pair in mapping.CompanyTemplates)
+                {
+                    if (NormalizeCompanyKey(pair.Key).Equals(wanted, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return pair.Value;
+                    }
+                }
+            }
+
+            CompanyTemplateProfile wildcardProfile;
+            if (mapping.CompanyTemplates.TryGetValue("*", out wildcardProfile))
+            {
+                return wildcardProfile;
+            }
+
+            return null;
+        }
+
+        private static void ApplyTemplateDefaults(Dictionary<string, object> mappedData, CompanyTemplateProfile templateProfile)
+        {
+            if (mappedData == null || templateProfile == null || templateProfile.Defaults == null)
+            {
+                return;
+            }
+
+            foreach (var item in templateProfile.Defaults)
+            {
+                object current;
+                if (mappedData.TryGetValue(item.Key, out current))
+                {
+                    var text = Convert.ToString(current, CultureInfo.InvariantCulture);
+                    if (!string.IsNullOrWhiteSpace(text))
+                    {
+                        continue;
+                    }
+                }
+
+                mappedData[item.Key] = item.Value;
+            }
+        }
+
+        private static List<string> ValidateRequiredTargets(Dictionary<string, object> mappedData, CompanyTemplateProfile templateProfile)
+        {
+            var missing = new List<string>();
+            if (mappedData == null || templateProfile == null || templateProfile.RequiredTargets == null)
+            {
+                return missing;
+            }
+
+            var canAutoGenerateLedgerEntries = CanAutoGenerateLedgerEntries(mappedData);
+
+            foreach (var requiredTarget in templateProfile.RequiredTargets)
+            {
+                if (string.IsNullOrWhiteSpace(requiredTarget))
+                {
+                    continue;
+                }
+
+                // If explicit ledger entries are not mapped but party+amount is present,
+                // generator can auto-create ALLLEDGERENTRIES.LIST nodes.
+                if (canAutoGenerateLedgerEntries
+                    && requiredTarget.IndexOf("ALLLEDGERENTRIES", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    continue;
+                }
+
+                if (!HasRequiredTarget(mappedData, requiredTarget))
+                {
+                    missing.Add(requiredTarget);
+                }
+            }
+
+            return missing;
+        }
+
+        private static bool HasRequiredTarget(Dictionary<string, object> mappedData, string requiredTarget)
+        {
+            if (requiredTarget.IndexOf("[*]", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                var regexPattern = "^" + Regex.Escape(Canonicalize(requiredTarget)).Replace("\\[\\*\\]", "\\[[0-9]+\\]") + "$";
+                var regex = new Regex(regexPattern, RegexOptions.IgnoreCase);
+
+                foreach (var key in mappedData.Keys)
+                {
+                    if (!regex.IsMatch(Canonicalize(key)))
+                    {
+                        continue;
+                    }
+
+                    var value = Convert.ToString(mappedData[key], CultureInfo.InvariantCulture);
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            var wanted = Canonicalize(requiredTarget);
+            foreach (var key in mappedData.Keys)
+            {
+                if (!Canonicalize(key).Equals(wanted, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var value = Convert.ToString(mappedData[key], CultureInfo.InvariantCulture);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string Canonicalize(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return string.Empty;
+            }
+
+            var value = key.Trim();
+            value = value.Replace('\\', '/').Replace('.', '/').Replace('-', '/');
+            while (value.Contains("//"))
+            {
+                value = value.Replace("//", "/");
+            }
+
+            return value.ToLowerInvariant();
+        }
+
+        private static string NormalizeCompanyKey(string company)
+        {
+            if (string.IsNullOrWhiteSpace(company))
+            {
+                return string.Empty;
+            }
+
+            var value = company.Trim().ToLowerInvariant();
+            value = value.Replace(" ", string.Empty).Replace("-", string.Empty).Replace("_", string.Empty);
+            return value;
+        }
+
+        private static bool CanAutoGenerateLedgerEntries(Dictionary<string, object> mappedData)
+        {
+            if (mappedData == null || mappedData.Count == 0)
+            {
+                return false;
+            }
+
+            var hasParty = HasRequiredTarget(mappedData, "PARTYLEDGERNAME");
+            var hasAmount = HasRequiredTarget(mappedData, "AMOUNT")
+                || HasRequiredTarget(mappedData, "ALLINVENTORYENTRIES.LIST[*]/AMOUNT");
+
+            var hasExplicitLedgerEntries = false;
+            foreach (var key in mappedData.Keys)
+            {
+                if (key.IndexOf("ALLLEDGERENTRIES", StringComparison.OrdinalIgnoreCase) >= 0
+                    || key.IndexOf("LEDGERENTRIES", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    var value = Convert.ToString(mappedData[key], CultureInfo.InvariantCulture);
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        hasExplicitLedgerEntries = true;
+                        break;
+                    }
+                }
+            }
+
+            return hasParty && hasAmount && !hasExplicitLedgerEntries;
         }
 
         private bool TryCreateMissingLedgers(string responseXml)
